@@ -1,0 +1,12 @@
+/dist/
+/anjunganmandiriSEP/dist/
+/anjunganmandiriSEP/build/
+/anjunganmandiriSEP/nbproject/private/
+/KhanzaHMSAnjungan/nbproject/private/
+/KhanzaHMSAnjungan/build/
+dist.rar
+dist2/
+nbproject/private/
+*.log
+
+

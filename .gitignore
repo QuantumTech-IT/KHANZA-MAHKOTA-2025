@@ -8,5 +8,16 @@ dist.rar
 dist2/
 nbproject/private/
 *.log
+# NetBeans / Java Desktop
+/build/
+/dist/
+/nbbuild/
+/nbdist/
+
+# tambahkan ini kalau mau
+cache/*.iyem
+setting/database.xml
+# Hasil compile
+*.class
 
 

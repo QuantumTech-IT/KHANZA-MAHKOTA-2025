@@ -1034,7 +1034,6 @@ public class DlgCariPeriksaRadiologi extends javax.swing.JDialog {
 
         TabData.setBackground(new java.awt.Color(254, 255, 254));
         TabData.setForeground(new java.awt.Color(50, 50, 50));
-        TabData.setFont(new java.awt.Font("Tahoma", 0, 11)); // NOI18N
         TabData.setName("TabData"); // NOI18N
         TabData.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -1056,7 +1055,6 @@ public class DlgCariPeriksaRadiologi extends javax.swing.JDialog {
         btnAmbilPhoto.setIcon(new javax.swing.ImageIcon(getClass().getResource("/picture/plus_16.png"))); // NOI18N
         btnAmbilPhoto.setMnemonic('U');
         btnAmbilPhoto.setToolTipText("Alt+U");
-        btnAmbilPhoto.setLabel("");
         btnAmbilPhoto.setName("btnAmbilPhoto"); // NOI18N
         btnAmbilPhoto.setPreferredSize(new java.awt.Dimension(40, 30));
         btnAmbilPhoto.addActionListener(new java.awt.event.ActionListener() {
@@ -1070,7 +1068,6 @@ public class DlgCariPeriksaRadiologi extends javax.swing.JDialog {
         BtnRefreshPhoto.setMnemonic('U');
         BtnRefreshPhoto.setToolTipText("Alt+U");
         BtnRefreshPhoto.setName("BtnRefreshPhoto"); // NOI18N
-        BtnRefreshPhoto.setPreferredSize(new java.awt.Dimension(40, 30));
         BtnRefreshPhoto.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 BtnRefreshPhotoActionPerformed(evt);
@@ -1145,6 +1142,7 @@ public class DlgCariPeriksaRadiologi extends javax.swing.JDialog {
         HasilPeriksa.setBorder(null);
         HasilPeriksa.setColumns(25);
         HasilPeriksa.setRows(40);
+        HasilPeriksa.setFont(new java.awt.Font("Tahoma", 0, 16)); // NOI18N
         HasilPeriksa.setName("HasilPeriksa"); // NOI18N
         Scroll3.setViewportView(HasilPeriksa);
 

@@ -20,4 +20,18 @@ setting/database.xml
 # Hasil compile
 *.class
 
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Backup file
+*.bak_*
+
+# Log runtime (jangan ikut commit)
+logs/
+
+# Config sensitif - copy manual saat deploy, jangan commit token
+config/telegram.properties
+
 

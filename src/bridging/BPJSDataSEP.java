@@ -3533,6 +3533,13 @@ public final class BPJSDataSEP extends javax.swing.JDialog {
                         System.out.println("message : "+nameNode.path("message").asText());
                         JOptionPane.showMessageDialog(null,nameNode.path("message").asText());
                         if(nameNode.path("code").asText().equals("200")){
+                            fungsi.AppLogger.info("SEP_BPJS", user,
+                                "NoSEP=" + tbDataSEP.getValueAt(tbDataSEP.getSelectedRow(),0) +
+                                " | NoRawat=" + TNoRw.getText() +
+                                " | Pasien=" + TPasien.getText() +
+                                " | Diagnosa=" + KdPenyakit.getText() + "-" + NmPenyakit.getText() +
+                                " | Poli=" + NmPoli.getText() +
+                                " | Aksi=EDIT_SEP | Hasil=SUKSES");
                             Sequel.mengedit("bridging_sep",
                                  "no_sep=?","no_rawat=?,catatan=?,diagawal=?,nmdiagnosaawal=?,kdpolitujuan=?,nmpolitujuan=?,klsrawat=?,klsnaik=?,pembiayaan=?,"+
                                  "pjnaikkelas=?,lakalantas=?,user=?,nomr=?,nama_pasien=?,tanggal_lahir=?,peserta=?,jkel=?,eksekutif=?,cob=?,notelep=?,katarak=?,tglkkl=?,"+
@@ -3549,11 +3556,14 @@ public final class BPJSDataSEP extends javax.swing.JDialog {
                                  TNoRw.getText(),NmPpkRujukan.getText(),NoRujukan.getText(),
                                  tbDataSEP.getValueAt(tbDataSEP.getSelectedRow(),1).toString()
                              });
-                             emptTeks(); 
+                             emptTeks();
                              TabRawat.setSelectedIndex(1);
-                             tampil();          
+                             tampil();
                         }
                     }catch (Exception ex) {
+                        fungsi.AppLogger.error("SEP_BPJS", user,
+                            "NoRawat=" + TNoRw.getText() + " | Aksi=EDIT_SEP | Hasil=EXCEPTION",
+                            ex.toString());
                         System.out.println("Notifikasi Bridging Edit : "+ex);
                         if(ex.toString().contains("UnknownHostException")){
                             JOptionPane.showMessageDialog(null,"Koneksi ke server BPJS terputus...!");
@@ -6461,7 +6471,13 @@ public final class BPJSDataSEP extends javax.swing.JDialog {
             System.out.println("message : "+nameNode.path("message").asText());
             JOptionPane.showMessageDialog(null,nameNode.path("message").asText());
             if(nameNode.path("code").asText().equals("200")){
-                Sequel.meghapus("bridging_sep","no_sep",tbDataSEP.getValueAt(tbDataSEP.getSelectedRow(),0).toString());
+                String noSepHapus = tbDataSEP.getValueAt(tbDataSEP.getSelectedRow(),0).toString();
+                fungsi.AppLogger.warn("SEP_BPJS", user,
+                    "NoSEP=" + noSepHapus +
+                    " | NoRawat=" + TNoRw.getText() +
+                    " | Pasien=" + TPasien.getText() +
+                    " | Aksi=HAPUS_SEP | Hasil=SUKSES");
+                Sequel.meghapus("bridging_sep","no_sep", noSepHapus);
                 tabMode.removeRow(tbDataSEP.getSelectedRow());
                 emptTeks();
             }
@@ -6528,14 +6544,24 @@ public final class BPJSDataSEP extends javax.swing.JDialog {
             System.out.println("message : "+nameNode.path("message").asText());
             JOptionPane.showMessageDialog(null,nameNode.path("message").asText());
             if(nameNode.path("code").asText().equals("200")){
+                String noSepInternal = tbDataSEPInternal.getValueAt(tbDataSEPInternal.getSelectedRow(),0).toString();
+                fungsi.AppLogger.warn("SEP_BPJS", user,
+                    "NoSEP=" + noSepInternal +
+                    " | NoRawat=" + TNoRw.getText() +
+                    " | Pasien=" + TPasien.getText() +
+                    " | Aksi=HAPUS_SEP_INTERNAL | Hasil=SUKSES");
                 Sequel.queryu2("delete from bridging_sep_internal where no_sep=? and noskdp=? and tglrujukan=? and kdpolitujuan=?",4,new String[]{
-                    tbDataSEPInternal.getValueAt(tbDataSEPInternal.getSelectedRow(),0).toString(),tbDataSEPInternal.getValueAt(tbDataSEPInternal.getSelectedRow(),43).toString(),
-                    tbDataSEPInternal.getValueAt(tbDataSEPInternal.getSelectedRow(),5).toString(),tbDataSEPInternal.getValueAt(tbDataSEPInternal.getSelectedRow(),15).toString()
+                    noSepInternal, tbDataSEPInternal.getValueAt(tbDataSEPInternal.getSelectedRow(),43).toString(),
+                    tbDataSEPInternal.getValueAt(tbDataSEPInternal.getSelectedRow(),5).toString(),
+                    tbDataSEPInternal.getValueAt(tbDataSEPInternal.getSelectedRow(),15).toString()
                 });
                 tabModeInternal.removeRow(tbDataSEPInternal.getSelectedRow());
                 emptTeks();
             }
-        } catch (Exception e) {   
+        } catch (Exception e) {
+            fungsi.AppLogger.error("SEP_BPJS", user,
+                "NoRawat=" + TNoRw.getText() + " | Aksi=HAPUS_SEP_INTERNAL | Hasil=EXCEPTION",
+                e.toString());
             System.out.println("Notif : "+e);
             if(e.toString().contains("UnknownHostException")){
                 JOptionPane.showMessageDialog(null,"Koneksi ke server BPJS terputus...!");
@@ -6631,8 +6657,33 @@ public final class BPJSDataSEP extends javax.swing.JDialog {
             if(nameNode.path("code").asText().equals("200")){
                  response = mapper.readTree(api.Decrypt(root.path("response").asText(),utc)).path("sep").path("noSep");
                  //response = root.path("response").path("sep").path("noSep");
+
+                 // [FIX BUG #4] Cek duplikat no_rawat di bridging_sep sebelum insert
+                 // Mencegah silent fallback ke bridging_sep_internal akibat duplicate key
+                 int existingSEP = Sequel.cariInteger(
+                     "select count(*) from bridging_sep where no_rawat=?", TNoRw.getText());
+                 if(existingSEP > 0){
+                     String noSepLama = Sequel.cariIsi(
+                         "select no_sep from bridging_sep where no_rawat=?", TNoRw.getText());
+                     JOptionPane.showMessageDialog(null,
+                         "SEP untuk No Rawat " + TNoRw.getText() + " sudah ada di sistem.\n" +
+                         "No SEP terdaftar: " + noSepLama + "\n\n" +
+                         "Gunakan tombol EDIT untuk memperbarui data SEP.",
+                         "SEP Sudah Ada", JOptionPane.WARNING_MESSAGE);
+                     return;
+                 }
+
+                 fungsi.AppLogger.info("SEP_BPJS", user,
+                     "NoRawat=" + TNoRw.getText() +
+                     " | NoSEP=" + response.asText() +
+                     " | Pasien=" + TPasien.getText() +
+                     " | NoKartu=" + NoKartu.getText() +
+                     " | Jenis=" + JenisPelayanan.getSelectedItem() +
+                     " | Poli=" + NmPoli.getText() +
+                     " | Diagnosa=" + KdPenyakit.getText() + "-" + NmPenyakit.getText() +
+                     " | Status=TERBIT_BPJS");
                  if(Sequel.menyimpantf2("bridging_sep","?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?","SEP",52,new String[]{
-                     response.asText(),TNoRw.getText(),Valid.SetTgl(TanggalSEP.getSelectedItem()+""),Valid.SetTgl(TanggalRujuk.getSelectedItem()+""),NoRujukan.getText(),KdPpkRujukan.getText(), 
+                     response.asText(),TNoRw.getText(),Valid.SetTgl(TanggalSEP.getSelectedItem()+""),Valid.SetTgl(TanggalRujuk.getSelectedItem()+""),NoRujukan.getText(),KdPpkRujukan.getText(),
                      NmPpkRujukan.getText(),KdPPK.getText(), NmPPK.getText(),JenisPelayanan.getSelectedItem().toString().substring(0,1), Catatan.getText(),KdPenyakit.getText(),NmPenyakit.getText(),
                      KdPoli.getText(),NmPoli.getText(), Kelas.getSelectedItem().toString().substring(0,1),(NaikKelas.getSelectedIndex()>0?NaikKelas.getSelectedItem().toString().substring(0,1):""),
                      (Pembiayaan.getSelectedIndex()>0?Pembiayaan.getSelectedItem().toString().substring(0,1):""),(PenanggungJawab.getText().equals("")?"":PenanggungJawab.getText()),
@@ -6648,55 +6699,52 @@ public final class BPJSDataSEP extends javax.swing.JDialog {
                          "-",NoBalasan.getText()
                      });
                      if(JenisPelayanan.getSelectedIndex()==1){
-                            Sequel.mengedit("bridging_sep","no_sep=?","tglpulang=?",2,new String[]{                             
+                            Sequel.mengedit("bridging_sep","no_sep=?","tglpulang=?",2,new String[]{
                                  Valid.SetTgl(TanggalSEP.getSelectedItem()+""),
                                  response.asText()
-                            });           
-                     } 
+                            });
+                     }
                      if(!prb.equals("")){
                         if(Sequel.menyimpantf("bpjs_prb","?,?","PRB",2,new String[]{response.asText(),prb})==true){
                             prb="";
-                        } 
+                        }
                      }
-                        
+
+                     fungsi.AppLogger.info("SEP_BPJS", user,
+                         "NoRawat=" + TNoRw.getText() +
+                         " | NoSEP=" + response.asText() +
+                         " | Pasien=" + TPasien.getText() +
+                         " | Hasil=SUKSES_SIMPAN_DB");
                      emptTeks();
                  }else{
-                     if(Sequel.menyimpantf("bridging_sep_internal","?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?","SEP",52,new String[]{
-                        response.asText(),TNoRw.getText(),Valid.SetTgl(TanggalSEP.getSelectedItem()+""),Valid.SetTgl(TanggalRujuk.getSelectedItem()+""),NoRujukan.getText(),KdPpkRujukan.getText(), 
-                        NmPpkRujukan.getText(),KdPPK.getText(), NmPPK.getText(),JenisPelayanan.getSelectedItem().toString().substring(0,1), Catatan.getText(),KdPenyakit.getText(),NmPenyakit.getText(),
-                        KdPoli.getText(),NmPoli.getText(), Kelas.getSelectedItem().toString().substring(0,1),(NaikKelas.getSelectedIndex()>0?NaikKelas.getSelectedItem().toString().substring(0,1):""),
-                        (Pembiayaan.getSelectedIndex()>0?Pembiayaan.getSelectedItem().toString().substring(0,1):""),(PenanggungJawab.getText().equals("")?"":PenanggungJawab.getText()),
-                        LakaLantas.getSelectedItem().toString().substring(0,1),user,TNoRM.getText(),TPasien.getText(),TglLahir.getText(),JenisPeserta.getText(),JK.getText(),NoKartu.getText(),
-                        "0000-00-00 00:00:00",AsalRujukan.getSelectedItem().toString(),Eksekutif.getSelectedItem().toString(),COB.getSelectedItem().toString(),NoTelp.getText(),Katarak.getSelectedItem().toString(),
-                        tglkkl,Keterangan.getText(),Suplesi.getSelectedItem().toString(),NoSEPSuplesi.getText(),KdPropinsi.getText(),NmPropinsi.getText(),KdKabupaten.getText(),NmKabupaten.getText(),
-                        KdKecamatan.getText(),NmKecamatan.getText(),NoSKDP.getText(),KdDPJP.getText(),NmDPJP.getText(),TujuanKunjungan.getSelectedItem().toString().substring(0,1),
-                        (FlagProsedur.getSelectedIndex()>0?FlagProsedur.getSelectedItem().toString().substring(0,1):""),(Penunjang.getSelectedIndex()>0?Penunjang.getSelectedIndex()+"":""),
-                        (AsesmenPoli.getSelectedIndex()>0?AsesmenPoli.getSelectedItem().toString().substring(0,1):""),KdDPJPLayanan.getText(),NmDPJPLayanan.getText()
-                    })==true){
-                        Sequel.menyimpan("rujuk_masuk","?,?,?,?,?,?,?,?,?,?",10,new String[]{
-                            TNoRw.getText(),NmPpkRujukan.getText(),"-",NoRujukan.getText(),"0",NmPpkRujukan.getText(),KdPenyakit.getText(),"-",
-                            "-",NoBalasan.getText()
-                        });
-                        if(JenisPelayanan.getSelectedIndex()==1){
-                               Sequel.mengedit("bridging_sep_internal","no_sep=?","tglpulang=?",2,new String[]{                             
-                                    Valid.SetTgl(TanggalSEP.getSelectedItem()+""),
-                                    response.asText()
-                               });           
-                        } 
-                        if(!prb.equals("")){
-                           if(Sequel.menyimpantf("bpjs_prb","?,?","PRB",2,new String[]{response.asText(),prb})==true){
-                               prb="";
-                           } 
-                        }
-
-                        emptTeks();
-                    }
-                 }                     
+                     // [FIX BUG #1] Jangan fallback ke bridging_sep_internal — tampilkan error agar tidak SEP hilang
+                     // SEP sudah TERBIT di BPJS (code 200) tapi GAGAL simpan ke DB lokal
+                     // User harus catat No SEP dan lapor ke admin untuk insert manual
+                     fungsi.AppLogger.error("SEP_BPJS", user,
+                         "NoRawat=" + TNoRw.getText() +
+                         " | NoSEP=" + response.asText() +
+                         " | Pasien=" + TPasien.getText() +
+                         " | Hasil=GAGAL_SIMPAN_DB",
+                         "SEP terbit di BPJS tapi INSERT ke bridging_sep gagal (duplicate key?)");
+                     JOptionPane.showMessageDialog(null,
+                         "PERHATIAN! SEP berhasil diterbitkan di BPJS namun GAGAL disimpan ke database lokal.\n\n" +
+                         "No SEP dari BPJS : " + response.asText() + "\n" +
+                         "No Rawat        : " + TNoRw.getText() + "\n\n" +
+                         "Segera catat No SEP di atas dan hubungi administrator\nuntuk melakukan input manual ke sistem.",
+                         "Gagal Simpan SEP - Catat No SEP!", JOptionPane.ERROR_MESSAGE);
+                 }
             }
         }catch (Exception ex) {
-            System.out.println("Notifikasi Bridging : "+ex);
+            fungsi.AppLogger.error("SEP_BPJS", user,
+                "NoRawat=" + TNoRw.getText() + " | Hasil=EXCEPTION",
+                ex.toString());
             if(ex.toString().contains("UnknownHostException")){
-                JOptionPane.showMessageDialog(null,"Koneksi ke server BPJS terputus...!");
+                JOptionPane.showMessageDialog(null,"Koneksi ke server BPJS terputus. Periksa koneksi internet..!","Koneksi Terputus",JOptionPane.ERROR_MESSAGE);
+            }else{
+                JOptionPane.showMessageDialog(null,
+                    "Terjadi kesalahan saat proses SEP BPJS.\nDetail: "+ex.getMessage()+
+                    "\n\nSilahkan coba kembali atau hubungi administrator.",
+                    "Error SEP BPJS", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -6768,12 +6816,23 @@ public final class BPJSDataSEP extends javax.swing.JDialog {
                             datajam=Sequel.cariIsi("select DATE_ADD(concat('"+Valid.SetTgl(TanggalSEP.getSelectedItem()+"")+"',' ','"+jammulai+"'),INTERVAL "+(Integer.parseInt(nomorreg)*10)+" MINUTE) ");
                             parsedDate = dateFormat.parse(datajam);
                         }else{
+                            // [FIX BUG #1] Jadwal tidak ditemukan → hentikan proses + beri tahu user
                             statusantrean=false;
-                            System.out.println("Jadwal tidak ditemukan...!");
+                            System.out.println("[ANTRIAN] Jadwal dokter tidak ditemukan: hari="+hari+" poli="+kodepolireg+" dokter="+kodedokterreg);
+                            JOptionPane.showMessageDialog(null,
+                                "Jadwal dokter tidak ditemukan di sistem untuk:\n" +
+                                "Hari     : "+hari+"\n" +
+                                "Poli     : "+kodepolireg+"\n" +
+                                "Dokter   : "+kodedokterreg+"\n\n" +
+                                "Antrian Mobile JKN tidak dapat dibuat.\nSilahkan input jadwal dokter terlebih dahulu.",
+                                "Jadwal Tidak Ditemukan", JOptionPane.WARNING_MESSAGE);
+                            return false;
                         }
                     } catch (Exception e) {
                         statusantrean=false;
-                        System.out.println("Notif : "+e);
+                        System.out.println("Notif jadwal : "+e);
+                        JOptionPane.showMessageDialog(null,"Gagal membaca jadwal dokter: "+e.getMessage(),"Error Jadwal",JOptionPane.ERROR_MESSAGE);
+                        return false;
                     } finally{
                         if(rs!=null){
                             rs.close();
@@ -6781,7 +6840,11 @@ public final class BPJSDataSEP extends javax.swing.JDialog {
                         if(ps!=null){
                             ps.close();
                         }
-                    }   
+                    }
+
+                    // [FIX BUG #3] Pastikan sisakuota tidak negatif
+                    int nomorAntrean = Integer.parseInt(nomorreg);
+                    int sisakuota = Math.max(0, kuota - nomorAntrean);
 
                     respon="200";
                     if(!NoRujukan.getText().equals("")){
@@ -6811,28 +6874,30 @@ public final class BPJSDataSEP extends javax.swing.JDialog {
                                             "\"jeniskunjungan\": "+jeniskunjungan+"," +
                                             "\"nomorreferensi\": \""+NoRujukan.getText()+"\"," +
                                             "\"nomorantrean\": \""+nomorreg+"\"," +
-                                            "\"angkaantrean\": "+Integer.parseInt(nomorreg)+"," +
+                                            "\"angkaantrean\": "+nomorAntrean+"," +
                                             "\"estimasidilayani\": "+parsedDate.getTime()+"," +
-                                            "\"sisakuotajkn\": "+(kuota-Integer.parseInt(nomorreg))+"," +
+                                            "\"sisakuotajkn\": "+sisakuota+"," +
                                             "\"kuotajkn\": "+kuota+"," +
-                                            "\"sisakuotanonjkn\": "+(kuota-Integer.parseInt(nomorreg))+"," +
+                                            "\"sisakuotanonjkn\": "+sisakuota+"," +
                                             "\"kuotanonjkn\": "+kuota+"," +
                                             "\"keterangan\": \"Peserta harap 30 menit lebih awal guna pencatatan administrasi.\"" +
                                         "}";
                             System.out.println("JSON : "+requestJson+"\n");
                             requestEntity = new HttpEntity(requestJson,headers);
-                            URL = koneksiDB.URLAPIMOBILEJKN()+"/antrean/add";	
+                            URL = koneksiDB.URLAPIMOBILEJKN()+"/antrean/add";
                             System.out.println("URL : "+URL);
                             root = mapper.readTree(apiMobileJKN.getRest().exchange(URL, HttpMethod.POST, requestEntity, String.class).getBody());
-                            nameNode = root.path("metadata");  
+                            nameNode = root.path("metadata");
                             respon=nameNode.path("code").asText();
                             System.out.println("respon WS BPJS Kirim Pakai NoRujukan : "+nameNode.path("code").asText()+" "+nameNode.path("message").asText()+"\n");
                         } catch (Exception e) {
                             statusantrean=false;
                             System.out.println("Notif No.Rujuk : "+e);
+                            JOptionPane.showMessageDialog(null,"Gagal kirim antrian via No.Rujukan: "+e.getMessage(),"Error Antrian",JOptionPane.ERROR_MESSAGE);
                         }
                     }
 
+                    // 200=sukses, 201=gagal → jika NoRujukan gagal (201), coba pakai NoSKDP
                     if(respon.equals("201")){
                         if(!NoSKDP.getText().equals("")){
                             try {
@@ -6861,33 +6926,43 @@ public final class BPJSDataSEP extends javax.swing.JDialog {
                                                 "\"jeniskunjungan\": "+jeniskunjungan+"," +
                                                 "\"nomorreferensi\": \""+NoSKDP.getText()+"\"," +
                                                 "\"nomorantrean\": \""+nomorreg+"\"," +
-                                                "\"angkaantrean\": "+Integer.parseInt(nomorreg)+"," +
+                                                "\"angkaantrean\": "+nomorAntrean+"," +
                                                 "\"estimasidilayani\": "+parsedDate.getTime()+"," +
-                                                "\"sisakuotajkn\": "+(kuota-Integer.parseInt(nomorreg))+"," +
+                                                "\"sisakuotajkn\": "+sisakuota+"," +
                                                 "\"kuotajkn\": "+kuota+"," +
-                                                "\"sisakuotanonjkn\": "+(kuota-Integer.parseInt(nomorreg))+"," +
+                                                "\"sisakuotanonjkn\": "+sisakuota+"," +
                                                 "\"kuotanonjkn\": "+kuota+"," +
                                                 "\"keterangan\": \"Peserta harap 30 menit lebih awal guna pencatatan administrasi.\"" +
                                             "}";
                                 System.out.println("JSON : "+requestJson+"\n");
                                 requestEntity = new HttpEntity(requestJson,headers);
-                                URL = koneksiDB.URLAPIMOBILEJKN()+"/antrean/add";	
+                                URL = koneksiDB.URLAPIMOBILEJKN()+"/antrean/add";
                                 System.out.println("URL : "+URL);
                                 root = mapper.readTree(apiMobileJKN.getRest().exchange(URL, HttpMethod.POST, requestEntity, String.class).getBody());
-                                nameNode = root.path("metadata");  
+                                nameNode = root.path("metadata");
                                 System.out.println("respon WS BPJS Kirim Pakai SKDP : "+nameNode.path("code").asText()+" "+nameNode.path("message").asText()+"\n");
                                 if(nameNode.path("code").asText().equals("201")){
+                                    // NoRujukan gagal + NoSKDP gagal → antrian benar-benar gagal
                                     statusantrean=false;
+                                    JOptionPane.showMessageDialog(null,
+                                        "Antrian Mobile JKN gagal dibuat via No.Rujukan maupun SKDP.\n" +
+                                        "Pesan BPJS: "+nameNode.path("message").asText(),
+                                        "Antrian Gagal", JOptionPane.WARNING_MESSAGE);
                                 }
                             } catch (Exception e) {
                                 statusantrean=false;
                                 System.out.println("Notif SKDP : "+e);
+                                JOptionPane.showMessageDialog(null,"Gagal kirim antrian via SKDP: "+e.getMessage(),"Error Antrian",JOptionPane.ERROR_MESSAGE);
                             }
+                        }else{
+                            // NoRujukan gagal dan tidak ada SKDP → antrian gagal
+                            statusantrean=false;
                         }
                     }
                 } catch (Exception e) {
                     statusantrean=false;
-                    System.out.println("Notif : "+e);
+                    System.out.println("Notif antrian : "+e);
+                    JOptionPane.showMessageDialog(null,"Terjadi kesalahan saat proses antrian: "+e.getMessage(),"Error Antrian",JOptionPane.ERROR_MESSAGE);
                 }
             }
         }

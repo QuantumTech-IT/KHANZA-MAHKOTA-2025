@@ -7300,15 +7300,40 @@ public final class DlgReg extends javax.swing.JDialog {
 }//GEN-LAST:event_BtnBatalKeyPressed
 
     private void BtnHapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BtnHapusActionPerformed
-        for(i=0;i<tbPetugas.getRowCount();i++){ 
+        // Hitung dulu berapa baris yang dicentang
+        int jumlahDipilih = 0;
+        for(i=0; i<tbPetugas.getRowCount(); i++){
+            if(tbPetugas.getValueAt(i,0).toString().equals("true")) jumlahDipilih++;
+        }
+        if(jumlahDipilih == 0){
+            JOptionPane.showMessageDialog(null,"Tidak ada data yang dipilih.\nSilahkan centang data yang ingin dihapus.","Peringatan",JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        int konfirmasi = JOptionPane.showConfirmDialog(null,
+            "Anda akan menghapus " + jumlahDipilih + " data registrasi.\nProses ini tidak dapat dibatalkan!\n\nYakin ingin melanjutkan?",
+            "Konfirmasi Hapus Registrasi", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        if(konfirmasi != JOptionPane.YES_OPTION) return;
+
+        for(i=0; i<tbPetugas.getRowCount(); i++){
             if(tbPetugas.getValueAt(i,0).toString().equals("true")){
-                if(Sequel.meghapustf("reg_periksa","no_rawat",tbPetugas.getValueAt(i,2).toString())==true){
+                String noRawatHapus = tbPetugas.getValueAt(i,2).toString();
+                String noRegHapus   = tbPetugas.getValueAt(i,1).toString();
+                String pasienHapus  = tbPetugas.getValueAt(i,8) != null ? tbPetugas.getValueAt(i,8).toString() : "-";
+                if(Sequel.meghapustf("reg_periksa","no_rawat", noRawatHapus)==true){
+                    fungsi.AppLogger.warn("REGISTRASI", akses.getkode(),
+                        "NoReg=" + noRegHapus +
+                        " | NoRawat=" + noRawatHapus +
+                        " | Pasien=" + pasienHapus +
+                        " | Aksi=HAPUS_REGISTRASI | Hasil=SUKSES");
                     tabMode.removeRow(i);
                     i--;
+                }else{
+                    fungsi.AppLogger.error("REGISTRASI", akses.getkode(),
+                        "NoRawat=" + noRawatHapus + " | Aksi=HAPUS_REGISTRASI | Hasil=GAGAL", "meghapustf return false");
                 }
             }
         }
-        
+
         LCount.setText(""+tabMode.getRowCount());
         emptTeks();
 }//GEN-LAST:event_BtnHapusActionPerformed
@@ -7449,6 +7474,15 @@ public final class DlgReg extends javax.swing.JDialog {
                                 KdDokter.getText(),TNoRM.getText(),kdpoli.getText(),TPngJwb.getText(),TAlmt.getText(),TBiaya.getText(),THbngn.getText(),
                                 TStatus.getText(),kdpnj.getText(),umur,sttsumur,tbPetugas.getValueAt(tbPetugas.getSelectedRow(),2).toString()
                             })==true){
+                            fungsi.AppLogger.info("REGISTRASI", akses.getkode(),
+                                "NoReg=" + TNoReg.getText() +
+                                " | NoRawat=" + TNoRw.getText() +
+                                " | NoRM=" + TNoRM.getText() +
+                                " | Pasien=" + TPasien.getText() +
+                                " | Poli=" + TPoli.getText() +
+                                " | Dokter=" + TDokter.getText() +
+                                " | Bayar=" + nmpnj.getText() +
+                                " | Aksi=EDIT_REGISTRASI | Hasil=SUKSES");
                             tabMode.setValueAt(TNoReg.getText(),tbPetugas.getSelectedRow(),1);
                             tabMode.setValueAt(TNoRw.getText(),tbPetugas.getSelectedRow(),2);
                             tabMode.setValueAt(Valid.SetTgl(DTPReg.getSelectedItem()+""),tbPetugas.getSelectedRow(),3);
@@ -7470,6 +7504,11 @@ public final class DlgReg extends javax.swing.JDialog {
                             tabMode.setValueAt(kdpoli.getText(),tbPetugas.getSelectedRow(),21);
                             tabMode.setValueAt(kdpnj.getText(),tbPetugas.getSelectedRow(),22);
                             emptTeks();
+                        }else{
+                            fungsi.AppLogger.error("REGISTRASI", akses.getkode(),
+                                "NoRawat=" + TNoRw.getText() +
+                                " | Pasien=" + TPasien.getText() +
+                                " | Aksi=EDIT_REGISTRASI | Hasil=GAGAL", "queryu2tf return false");
                         }
                     }else{
                         JOptionPane.showMessageDialog(rootPane,"Maaf hak akses anda dibatasi, silahkan konfirmasi kepada admin..!!! ");
@@ -15924,7 +15963,18 @@ private void MnLaporanRekapKunjunganBulananPoliActionPerformed(java.awt.event.Ac
         } 
         
         if(ceksukses==true){
-            UpdateUmur(); 
+            fungsi.AppLogger.info("REGISTRASI", akses.getkode(),
+                "NoReg=" + TNoReg.getText() +
+                " | NoRawat=" + TNoRw.getText() +
+                " | NoRM=" + TNoRM.getText() +
+                " | Pasien=" + TPasien.getText() +
+                " | Poli=" + TPoli.getText() +
+                " | Dokter=" + TDokter.getText() +
+                " | Bayar=" + nmpnj.getText() +
+                " | Tgl=" + Valid.SetTgl(DTPReg.getSelectedItem()+"") +
+                " | Status=" + status +
+                " | Hasil=SUKSES");
+            UpdateUmur();
             if(!AsalRujukan.getText().equals("")){
                 Valid.autoNomer3("select ifnull(MAX(CONVERT(RIGHT(rujuk_masuk.no_rawat,4),signed)),0) from reg_periksa inner join rujuk_masuk on reg_periksa.no_rawat=rujuk_masuk.no_rawat where reg_periksa.tgl_registrasi='"+Valid.SetTgl(DTPReg.getSelectedItem()+"")+"' ","BR/"+dateformat.format(DTPReg.getDate())+"/",4,NoBalasan);
                 

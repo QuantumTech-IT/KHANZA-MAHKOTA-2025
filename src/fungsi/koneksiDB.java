@@ -407,6 +407,90 @@ public class koneksiDB {
         }
         return var;
     }
+
+    public static String URLMOBILEJKNFKTP(){
+        try{
+            prop.loadFromXML(new FileInputStream("setting/database.xml"));
+            if(prop.getProperty("URLMOBILEJKNFKTP") != null){
+                var=prop.getProperty("URLMOBILEJKNFKTP");
+            }else{
+                var=URLAPIMOBILEJKN();
+            }
+        }catch(Exception e){
+            var=URLAPIMOBILEJKN();
+        }
+        return var;
+    }
+
+    public static String SECRETKEYMOBILEJKNFKTP(){
+        try{
+            prop.loadFromXML(new FileInputStream("setting/database.xml"));
+            if(prop.getProperty("SECRETKEYMOBILEJKNFKTP") != null){
+                var=EnkripsiAES.decrypt(prop.getProperty("SECRETKEYMOBILEJKNFKTP"));
+            }else{
+                var=SECRETKEYAPIMOBILEJKN();
+            }
+        }catch(Exception e){
+            var=SECRETKEYAPIMOBILEJKN();
+        }
+        return var;
+    }
+
+    public static String CONSIDMOBILEJKNFKTP(){
+        try{
+            prop.loadFromXML(new FileInputStream("setting/database.xml"));
+            if(prop.getProperty("CONSIDMOBILEJKNFKTP") != null){
+                var=EnkripsiAES.decrypt(prop.getProperty("CONSIDMOBILEJKNFKTP"));
+            }else{
+                var=CONSIDAPIMOBILEJKN();
+            }
+        }catch(Exception e){
+            var=CONSIDAPIMOBILEJKN();
+        }
+        return var;
+    }
+
+    public static String USERKEYMOBILEJKNFKTP(){
+        try{
+            prop.loadFromXML(new FileInputStream("setting/database.xml"));
+            if(prop.getProperty("USERKEYMOBILEJKNFKTP") != null){
+                var=EnkripsiAES.decrypt(prop.getProperty("USERKEYMOBILEJKNFKTP"));
+            }else{
+                var=USERKEYAPIMOBILEJKN();
+            }
+        }catch(Exception e){
+            var=USERKEYAPIMOBILEJKN();
+        }
+        return var;
+    }
+
+    public static String USERMOBILEJKNFKTP(){
+        try{
+            prop.loadFromXML(new FileInputStream("setting/database.xml"));
+            if(prop.getProperty("USERMOBILEJKNFKTP") != null){
+                var=EnkripsiAES.decrypt(prop.getProperty("USERMOBILEJKNFKTP"));
+            }else{
+                var="";
+            }
+        }catch(Exception e){
+            var="";
+        }
+        return var;
+    }
+
+    public static String PASSMOBILEJKNFKTP(){
+        try{
+            prop.loadFromXML(new FileInputStream("setting/database.xml"));
+            if(prop.getProperty("PASSMOBILEJKNFKTP") != null){
+                var=EnkripsiAES.decrypt(prop.getProperty("PASSMOBILEJKNFKTP"));
+            }else{
+                var="";
+            }
+        }catch(Exception e){
+            var="";
+        }
+        return var;
+    }
     
     public static String URLAPIAPOTEKBPJS(){
         try{
@@ -1205,7 +1289,27 @@ public class koneksiDB {
         }
         return var;
     }
+
+    public static String LOKASITEMPLATESOAPCSV(){
+        try{
+            prop.loadFromXML(new FileInputStream("setting/database.xml"));
+            var=prop.getProperty("LOKASITEMPLATESOAPCSV","");
+        }catch(Exception e){
+            var="";
+        }
+        return var;
+    }
     
+    public static String URLKFAV2SATUSEHAT(){
+        try{
+            prop.loadFromXML(new FileInputStream("setting/database.xml"));
+            var=prop.getProperty("URLKFAV2SATUSEHAT","https://api-satusehat.kemkes.go.id/kfa-v2");
+        }catch(Exception e){
+            var="https://api-satusehat.kemkes.go.id/kfa-v2";
+        }
+        return var;
+    }
+
     public static String USERORTHANC(){
         try{
             prop.loadFromXML(new FileInputStream("setting/database.xml"));
